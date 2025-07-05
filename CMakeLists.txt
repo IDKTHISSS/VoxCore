@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
-project(VoxEngine)
+project(VoxCore)
 
 set(CMAKE_CXX_STANDARD 17)
+
+# Отключаем ненужные подсистемы SDL для Windows
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 
 # Vulkan
@@ -31,16 +33,23 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan)
 
 # Движок
-file(GLOB_RECURSE ENGINE_SRC "*.cpp")
-file(GLOB_RECURSE ENGINE_HDR "*.h")
+file(GLOB_RECURSE ENGINE_SRC
+    Application/*.cpp
+    Core/**/*.cpp
+    Platform/**/*.cpp
+)
+file(GLOB_RECURSE ENGINE_HDR
+    Application/*.h
+    Core/**/*.h
+    Platform/**/*.h
+)
 
-add_library(VoxEngine STATIC ${ENGINE_SRC} ${ENGINE_HDR})
-target_include_directories(VoxEngine PUBLIC
-        include
+add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR})
+target_include_directories(VoxCore PUBLIC
         libs/SDL/include
         ${GLM_INCLUDE_DIR}
 )
-target_link_libraries(VoxEngine
+target_link_libraries(VoxCore
         imgui
         SDL3-static
 )
