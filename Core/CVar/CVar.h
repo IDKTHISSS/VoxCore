@@ -57,6 +57,11 @@ static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags)
 (CVarManager::Instance().Get(name) ? std::get<type>(CVarManager::Instance().Get(name)->value) : type{})
 #define GET_CVAR_DESC(name) \
 (CVarManager::Instance().Get(name) ? CVarManager::Instance().Get(name)->description : "")
+#define SET_CVAR(name, newVal) \
+    do { \
+        auto* var = CVarManager::Instance().Get(name); \
+        if (var) var->Set(newVal); \
+    } while (0)
 
 
 #endif //CVAR_H

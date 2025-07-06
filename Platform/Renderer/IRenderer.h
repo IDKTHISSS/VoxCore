@@ -13,4 +13,5 @@ public:
     virtual ~IRenderer() = default;
 
     virtual bool Init(IWindow *window) = 0;
+    virtual void Cleanup() = 0;
 };

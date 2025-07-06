@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 
 class IWindow;
 class IRenderer;
@@ -13,6 +14,7 @@ namespace Engine {
     class Application {
     public:
         Application();
+        Application(std::string title, int width, int height);
         virtual ~Application();
 
         // Starts the main application loop
@@ -26,12 +28,14 @@ namespace Engine {
         // Shuts down the application and releases resources
         virtual void Shutdown();
 
-        std::unique_ptr<IWindow> window; ///< Application window
-        std::unique_ptr<IRenderer> renderer; ///< Main renderer
+        std::unique_ptr<IWindow> window;
+        std::unique_ptr<IRenderer> renderer;
 
     private:
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
         bool isRunning = true;
+        std::string appName = "Engine Application";
+        std::string appVersion = "1.0.0";
     };
 }

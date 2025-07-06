@@ -15,12 +15,18 @@
 
 using namespace Engine;
 
-// Global window parameters via CVar
-CONVAR("w_title", std::string("VOX CORE ENGINE"), "Title of engine window", CVAR_READONLY);
+CONVAR("w_title", "VoxCore base", "Game window title", CVAR_RUNTIME_ONLY);
 CONVAR("w_size_width", 1920, "Game window width", CVAR_ARCHIVE);
 CONVAR("w_size_height", 1080, "Game window height", CVAR_ARCHIVE);
 
 Application::Application() = default;
+
+Application::Application(std::string title, int width, int height) {
+    SET_CVAR("w_title", title);
+    SET_CVAR("w_size_width", width);
+    SET_CVAR("w_size_height", height);
+}
+
 Application::~Application() = default;
 
 void Application::Run() {

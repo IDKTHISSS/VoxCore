@@ -3,19 +3,22 @@ project(VoxCore)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Отключаем ненужные подсистемы SDL для Windows
+enable_testing()  # Включает поддержку CTest
+
+# === GoogleTest ===
+add_subdirectory(libs/googletest)
+
+# === SDL3 ===
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
-
-# Vulkan
-find_package(Vulkan REQUIRED)
-
-# SDL3
 add_subdirectory(libs/SDL)
 
-# GLM
+# === Vulkan ===
+find_package(Vulkan REQUIRED)
+
+# === GLM ===
 set(GLM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glm")
 
-# ImGui
+# === ImGui ===
 file(GLOB IMGUI_SOURCES
         libs/imgui/*.cpp
         libs/imgui/backends/imgui_impl_sdl3.cpp
@@ -32,16 +35,16 @@ target_include_directories(imgui PUBLIC
 )
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan)
 
-# Движок
+# === VoxCore Engine ===
 file(GLOB_RECURSE ENGINE_SRC
-    Application/*.cpp
-    Core/**/*.cpp
-    Platform/**/*.cpp
+        Application/*.cpp
+        Core/**/*.cpp
+        Platform/**/*.cpp
 )
 file(GLOB_RECURSE ENGINE_HDR
-    Application/*.h
-    Core/**/*.h
-    Platform/**/*.h
+        Application/*.h
+        Core/**/*.h
+        Platform/**/*.h
 )
 
 add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR})
@@ -49,7 +52,28 @@ target_include_directories(VoxCore PUBLIC
         libs/SDL/include
         ${GLM_INCLUDE_DIR}
 )
+
 target_link_libraries(VoxCore
         imgui
         SDL3-static
 )
+
+# === Unit Tests ===
+add_executable(VoxCoreTests
+
+        Tests/Basics/SDL_Window_Tests.cpp
+
+)
+target_include_directories(VoxCoreTests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}  # <- даёт доступ к Application/, Core/, Platform/
+        libs/SDL/include
+        ${GLM_INCLUDE_DIR}
+)
+target_link_libraries(VoxCoreTests
+        VoxCore
+        gtest
+        gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(VoxCoreTests)
