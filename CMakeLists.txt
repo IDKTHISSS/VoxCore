@@ -47,7 +47,22 @@ file(GLOB_RECURSE ENGINE_HDR
         Platform/**/*.h
 )
 
-add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR})
+add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR}
+        Platform/Renderer/Vulkan/VulkanInstance.cpp
+        Platform/Renderer/Vulkan/VulkanInstance.h
+        Platform/Renderer/Vulkan/PhysicalDevice.cpp
+        Platform/Renderer/Vulkan/PhysicalDevice.h
+        Platform/Renderer/Vulkan/LogicalDevice.cpp
+        Platform/Renderer/Vulkan/LogicalDevice.h
+        Platform/Renderer/Vulkan/VulkanSwapChain.cpp
+        Platform/Renderer/Vulkan/VulkanSwapChain.h
+        Platform/Renderer/Vulkan/VulkanRenderPass.cpp
+        Platform/Renderer/Vulkan/VulkanRenderPass.h
+        Platform/Renderer/Vulkan/GraphicsPipeline.cpp
+        Platform/Renderer/Vulkan/GraphicsPipeline.h
+        Platform/Renderer/Vulkan/CommandSystem.cpp
+        Platform/Renderer/Vulkan/CommandSystem.h
+)
 target_include_directories(VoxCore PUBLIC
         libs/SDL/include
         ${GLM_INCLUDE_DIR}

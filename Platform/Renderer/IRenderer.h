@@ -14,4 +14,5 @@ public:
 
     virtual bool Init(IWindow *window) = 0;
     virtual void Cleanup() = 0;
+    virtual void RenderFrame() = 0;
 };

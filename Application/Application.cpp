@@ -6,7 +6,7 @@
 
 #include "Application.h"
 #include "../Platform/Window/SDL3Window.h"
-#include "../Platform/Renderer/VulkanRenderer.h"
+#include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include <chrono>
 #include <utility>
 
@@ -54,7 +54,7 @@ void Application::Run() {
         lastTime = now;
         window->PollEvents();
         Update(dt);
-        // renderer->RenderFrame(); // Placeholder for future rendering
+        renderer->RenderFrame();
         window->SwapBuffers();
     }
     Shutdown();
