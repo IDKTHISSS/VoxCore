@@ -3,17 +3,21 @@
 //
 
 #pragma once
+#include <chrono>
+
 #include "../IRenderer.h"
 #include <memory>
 #include <vector>
 
-#include "../../Window/IWindow.h"
-#include <vulkan/vulkan.h>
+#include "Platform/Window/IWindow.h"
+#include <vulkan/vulkan.hpp>
 
-#include "VulkanInstance.h"
+#include "Core/VulkanInstance.h"
 
+class VulkanCommandSystem;
+class TrianglePipeline;
 class CommandSystem;
-class GraphicsPipeline;
+class GraphicsPipeline2;
 class VulkanRenderPass;
 class VulkanSwapChain;
 class LogicalDevice;
@@ -36,13 +40,15 @@ private:
     std::unique_ptr<VulkanInstance> m_instance;
     std::unique_ptr<PhysicalDevice> m_physicalDevice;
     std::unique_ptr<LogicalDevice> m_logicalDevice;
-    std::unique_ptr<VulkanSwapChain> m_swapChain;
+    std::unique_ptr<VulkanSwapChain> m_swapchain;
     std::unique_ptr<VulkanRenderPass> m_renderPass;
-    std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
-    std::unique_ptr<CommandSystem> m_commandSystem;
-    VkSurfaceKHR m_surface = nullptr;
-
+    std::unique_ptr<GraphicsPipeline2> m_graphicsPipeline;
+    std::unique_ptr<VulkanCommandSystem> m_commandSystem;
+    vk::SurfaceKHR m_surface = nullptr;
+    vk::Semaphore m_imageAvailable;
+    vk::Semaphore m_renderFinished;
     uint32_t m_currentFrame = 0;
+    std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;
 
     bool checkInstanceExtensionSupport(std::vector<const char*> * checkExtensions);

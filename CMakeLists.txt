@@ -40,49 +40,37 @@ file(GLOB_RECURSE ENGINE_SRC
         Application/*.cpp
         Core/**/*.cpp
         Platform/**/*.cpp
+        Platform/**/**/*.cpp
 )
 file(GLOB_RECURSE ENGINE_HDR
         Application/*.h
         Core/**/*.h
         Platform/**/*.h
+        Platform/**/**/*.h
 )
 
-add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR}
-        Platform/Renderer/Vulkan/VulkanInstance.cpp
-        Platform/Renderer/Vulkan/VulkanInstance.h
-        Platform/Renderer/Vulkan/PhysicalDevice.cpp
-        Platform/Renderer/Vulkan/PhysicalDevice.h
-        Platform/Renderer/Vulkan/LogicalDevice.cpp
-        Platform/Renderer/Vulkan/LogicalDevice.h
-        Platform/Renderer/Vulkan/VulkanSwapChain.cpp
-        Platform/Renderer/Vulkan/VulkanSwapChain.h
-        Platform/Renderer/Vulkan/VulkanRenderPass.cpp
-        Platform/Renderer/Vulkan/VulkanRenderPass.h
-        Platform/Renderer/Vulkan/GraphicsPipeline.cpp
-        Platform/Renderer/Vulkan/GraphicsPipeline.h
-        Platform/Renderer/Vulkan/CommandSystem.cpp
-        Platform/Renderer/Vulkan/CommandSystem.h
-)
+add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR})
 target_include_directories(VoxCore PUBLIC
-        libs/SDL/include
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${GLM_INCLUDE_DIR}
+        libs/SDL/include
+        ${Vulkan_INCLUDE_DIRS}     # подключаем заголовки Vulkan SDK (включает vulkan.hpp)
 )
-
 target_link_libraries(VoxCore
         imgui
         SDL3-static
+        Vulkan::Vulkan
 )
 
 # === Unit Tests ===
 add_executable(VoxCoreTests
-
         Tests/Basics/SDL_Window_Tests.cpp
-
 )
 target_include_directories(VoxCoreTests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}  # <- даёт доступ к Application/, Core/, Platform/
+        ${CMAKE_CURRENT_SOURCE_DIR}
         libs/SDL/include
         ${GLM_INCLUDE_DIR}
+        ${Vulkan_INCLUDE_DIRS}
 )
 target_link_libraries(VoxCoreTests
         VoxCore

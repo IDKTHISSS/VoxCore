@@ -34,6 +34,8 @@ namespace Engine {
     private:
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
+
+        void MainLoop();
         bool isRunning = true;
         std::string appName = "Engine Application";
         std::string appVersion = "1.0.0";

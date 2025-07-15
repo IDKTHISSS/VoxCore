@@ -1,26 +1,25 @@
 //
-// Created by IDKTHIS on 07.07.2025.
+// Created by IDKTHIS on 15.07.2025.
 //
 
 #pragma once
-#include <vector>
-#include <vulkan/vulkan.h>
 
-#include "VulkanRenderPass.h"
+#include "Platform/Renderer/Vulkan/Core/VulkanInstance.h"
 
-
-class GraphicsPipeline;
+class GraphicsPipeline2;
+class VulkanSwapChain;
+class VulkanRenderPass;
 class LogicalDevice;
 
-class CommandSystem {
+class VulkanCommandSystem {
 public:
-    explicit CommandSystem(LogicalDevice* logicalDevice, VulkanRenderPass* renderPass,
-        VulkanSwapChain* swapChain, GraphicsPipeline* graphicsPipeline);
-    ~CommandSystem();
+    explicit VulkanCommandSystem(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanRenderPass* renderPass,
+        VulkanSwapChain* swapChain, GraphicsPipeline2* graphicsPipeline);
+    ~VulkanCommandSystem() = default;
     bool Init(uint32_t graphicsQueueFamilyIndex);
     void Cleanup();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    [[nodiscard]] VkCommandBuffer* GetCommandBuffer(uint32_t frameIndex) {
+    [[nodiscard]] vk::CommandBuffer *GetCommandBuffer(uint32_t frameIndex) {
         return &m_commandBuffers[frameIndex];
     }
 
@@ -40,14 +39,16 @@ public:
     }
 
 private:
+    VulkanInstance* m_vulkanInstance;
     LogicalDevice* m_logicalDevice;
     VulkanRenderPass* m_renderPass;
     VulkanSwapChain* m_swapChain;
-    GraphicsPipeline* m_graphicsPipeline;
+    GraphicsPipeline2* m_graphicsPipeline;
     VkCommandPool m_commandPool{};
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    std::vector<vk::CommandBuffer> m_commandBuffers;
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
 };
+

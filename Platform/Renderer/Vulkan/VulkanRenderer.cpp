@@ -3,29 +3,28 @@
 //
 
 #include "VulkanRenderer.h"
-#include <vulkan/vulkan.h>
+
 #include <cassert>
 #include <stdexcept>
 #include <SDL3/SDL_vulkan.h>
 
-#include "CommandSystem.h"
-#include "GraphicsPipeline.h"
-#include "LogicalDevice.h"
-#include "PhysicalDevice.h"
-#include "VulkanRenderPass.h"
-#include "VulkanSwapChain.h"
 #include "../../../Core/CVar/CVar.h"
 #include "../../../Core/Log/Logger.h"
+#include "Commands/VulkanCommandSystem.h"
+#include "Devices/LogicalDevice.h"
+#include "Devices/PhysicalDevice.h"
+#include "Pipeline/GraphicsPipeline2.h"
+#include "RenderPass/VulkanRenderPass.h"
+#include "Swapchain/VulkanSwapChain.h"
 
 VulkanRenderer::VulkanRenderer() {
 	m_instance = std::make_unique<VulkanInstance>();
 	m_physicalDevice = std::make_unique<PhysicalDevice>(m_instance.get());
-	m_logicalDevice = std::make_unique<LogicalDevice>();
-	m_swapChain = std::make_unique<VulkanSwapChain>();
-	m_renderPass = std::make_unique<VulkanRenderPass>();
-	m_graphicsPipeline = std::make_unique<GraphicsPipeline>(m_logicalDevice.get(), m_physicalDevice.get(), m_renderPass.get());
-	m_commandSystem = std::make_unique<CommandSystem>(m_logicalDevice.get(), m_renderPass.get(),
-		m_swapChain.get(), m_graphicsPipeline.get());
+	m_logicalDevice = std::make_unique<LogicalDevice>(m_instance.get());
+	m_swapchain = std::make_unique<VulkanSwapChain>(m_instance.get(), m_physicalDevice.get(), m_logicalDevice.get());
+	m_renderPass = std::make_unique<VulkanRenderPass>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get());
+	m_graphicsPipeline = std::make_unique<GraphicsPipeline2>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get(), m_renderPass.get());
+	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(), m_swapchain.get(), m_graphicsPipeline.get());
 };
 VulkanRenderer::~VulkanRenderer() = default;
 
@@ -33,14 +32,21 @@ bool VulkanRenderer::Init(IWindow *window) {
     assert(window != nullptr);
 	try {
 		m_instance->Init();
-		SDL_Vulkan_CreateSurface(static_cast<SDL_Window*>(window->GetNativeHandle()), m_instance->GetInstance(), nullptr, &m_surface);
+		VkSurfaceKHR c_surface;
+		SDL_Vulkan_CreateSurface(static_cast<SDL_Window*>(window->GetNativeHandle()), m_instance->GetInstance(), nullptr, &c_surface);
+		m_surface = c_surface;
 		m_physicalDevice->Init(m_surface);
 		m_logicalDevice->Init(m_physicalDevice.get());
-		m_swapChain->Init(m_physicalDevice.get(), m_logicalDevice.get(), m_surface,0,0);
-		m_renderPass->Init(m_logicalDevice.get(), m_swapChain.get());
-		m_swapChain->CreateFramebuffers(m_logicalDevice.get(), m_renderPass.get());
-		m_graphicsPipeline->Init("shaders/vert.spv","shaders/frag.spv");
+		m_swapchain->Init(m_surface);
+		m_renderPass->Init();
+		m_graphicsPipeline->Init();
+		m_swapchain->CreateFramebuffers(m_renderPass.get());
 		m_commandSystem->Init(m_physicalDevice->GetGraphicsQueueFamilyIndex());
+
+		m_imageAvailable = m_logicalDevice->GetHandle().createSemaphore({});
+		m_renderFinished = m_logicalDevice->GetHandle().createSemaphore({});
+
+		m_startTime = std::chrono::high_resolution_clock::now();
 	}
 	catch (const std::runtime_error &e) {
 		LOGF_ERROR("ERROR: %s\n", e.what());
@@ -87,54 +93,35 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char *> *ch
 }
 
 void VulkanRenderer::RenderFrame() {
-	vkWaitForFences(m_logicalDevice->GetDevice(), 1, m_commandSystem->GetInFlightFenceP(m_currentFrame), VK_TRUE, UINT64_MAX);
 
+	uint32_t imageIndex = m_logicalDevice->GetHandle().acquireNextImageKHR(m_swapchain->GetHandle(), UINT64_MAX, m_imageAvailable).value;
 
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(m_logicalDevice->GetDevice(), m_swapChain->GetSwapChain(), UINT64_MAX, m_commandSystem->GetImageAvailableSemaphore(m_currentFrame), VK_NULL_HANDLE, &imageIndex);
+	// Reset and record command buffer for this image index with current time
+	m_commandSystem->GetCommandBuffer(imageIndex)->reset({});
+	m_commandSystem->GetCommandBuffer(imageIndex)->begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		//recreateSwapChain();
-		return;
-	}
-	vkResetFences(m_logicalDevice->GetDevice(), 1, m_commandSystem->GetInFlightFenceP(m_currentFrame));
+	vk::ClearValue clearColor = vk::ClearColorValue(std::array<float,4>{0.1f, 0.1f, 1.0f, 1.0f});
+	vk::RenderPassBeginInfo renderPassBeginInfo(m_renderPass->GetHandle(), m_swapchain->GetFramebuffers()[imageIndex], {{0,0}, m_swapchain->GetSwapExtent()}, 1, &clearColor);
 
-	vkResetCommandBuffer(*m_commandSystem->GetCommandBuffer(m_currentFrame), 0);
-	m_commandSystem->recordCommandBuffer(*m_commandSystem->GetCommandBuffer(m_currentFrame), imageIndex);
+	m_commandSystem->GetCommandBuffer(imageIndex)->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+	m_commandSystem->GetCommandBuffer(imageIndex)->bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetHandle());
 
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> elapsed = currentTime - m_startTime;
+	float time = elapsed.count();
+	m_commandSystem->GetCommandBuffer(imageIndex)->pushConstants<float>(m_graphicsPipeline->GetPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, time);
 
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	VkSemaphore waitSemaphores[] = { m_commandSystem->GetImageAvailableSemaphore(m_currentFrame) };
-	VkSemaphore signalSemaphores[] = { m_commandSystem->GetRenderFinishedSemaphore(m_currentFrame) };
-	VkSwapchainKHR swapChains[] = { m_swapChain->GetSwapChain() };
+	m_commandSystem->GetCommandBuffer(imageIndex)->draw(3, 1, 0, 0);
+	m_commandSystem->GetCommandBuffer(imageIndex)->endRenderPass();
+	m_commandSystem->GetCommandBuffer(imageIndex)->end();
 
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = m_commandSystem->GetCommandBuffer(m_currentFrame);
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	vk::SubmitInfo submitInfo(1, &m_imageAvailable, nullptr, 1, m_commandSystem->GetCommandBuffer(imageIndex), 1, &m_renderFinished);
+	m_logicalDevice->GetGraphicsQueue().submit(submitInfo);
 
-	vkQueueSubmit(m_logicalDevice->GetGraphicsQueue(), 1, &submitInfo, m_commandSystem->GetInFlightFence(m_currentFrame));
+	vk::PresentInfoKHR presentInfo(1, &m_renderFinished, 1, &m_swapchain->GetHandle(), &imageIndex);
+	m_logicalDevice->GetGraphicsQueue().presentKHR(presentInfo);
 
-
-	VkPresentInfoKHR presentInfoKHR{};
-	presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfoKHR.swapchainCount = 1;
-	presentInfoKHR.pWaitSemaphores = signalSemaphores;
-	presentInfoKHR.pSwapchains = swapChains;
-	presentInfoKHR.pImageIndices = &imageIndex;
-
-	result = vkQueuePresentKHR( m_logicalDevice-> GetPresentQueue(), &presentInfoKHR);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR  ) {
-		//framebufferResized = false;
-		//recreateSwapChain();
-	}
-
-	m_currentFrame = (m_currentFrame + 1) % GET_CVAR(int, "r_max_frames_in_flight");
+	m_logicalDevice->GetGraphicsQueue().waitIdle();
+	m_currentFrame = (m_currentFrame + 1) % 2;
 }
 

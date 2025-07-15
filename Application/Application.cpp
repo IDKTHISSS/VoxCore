@@ -46,17 +46,9 @@ void Application::Run() {
         LOG_ERROR("Failed to initialize Vulkan renderer.");
         return;
     }
-    auto lastTime = std::chrono::high_resolution_clock::now();
+
     LOG_INFO("Starting main loop.");
-    while (!window->ShouldClose()) {
-        auto now = std::chrono::high_resolution_clock::now();
-        float dt = std::chrono::duration<float>(now - lastTime).count();
-        lastTime = now;
-        window->PollEvents();
-        Update(dt);
-        renderer->RenderFrame();
-        window->SwapBuffers();
-    }
+    MainLoop();
     Shutdown();
 }
 
@@ -73,4 +65,17 @@ void Application::Update(float dt) {
 // Shuts down the application and releases resources
 void Application::Shutdown() {
     // To be overridden in derived classes
+}
+
+void Application::MainLoop() {
+    auto lastTime = std::chrono::high_resolution_clock::now();
+    while (!window->ShouldClose()) {
+        auto now = std::chrono::high_resolution_clock::now();
+        float dt = std::chrono::duration<float>(now - lastTime).count();
+        lastTime = now;
+        window->PollEvents();
+        Update(dt);
+        renderer->RenderFrame();
+        window->SwapBuffers();
+    }
 }
