@@ -10,6 +10,3 @@
 [submodule "libs/googletest"]
 	path = libs/googletest
 	url = https://github.com/google/googletest.git
-[submodule "libs/vk-bootstrap"]
-	path = libs/vk-bootstrap
-	url = https://github.com/charles-lunarg/vk-bootstrap.git
