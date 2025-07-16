@@ -8,14 +8,15 @@
 #include <stdexcept>
 #include <SDL3/SDL_vulkan.h>
 
-#include "../../../Core/CVar/CVar.h"
-#include "../../../Core/Log/Logger.h"
+#include "Core/CVar/CVar.h"
+#include "Core/Log/Logger.h"
 #include "Commands/VulkanCommandSystem.h"
 #include "Devices/LogicalDevice.h"
 #include "Devices/PhysicalDevice.h"
-#include "Pipeline/GraphicsPipeline2.h"
+#include "Pipeline/GraphicsPipeline.h"
 #include "RenderPass/VulkanRenderPass.h"
 #include "Swapchain/VulkanSwapChain.h"
+
 
 VulkanRenderer::VulkanRenderer() {
 	m_instance = std::make_unique<VulkanInstance>();
@@ -23,11 +24,11 @@ VulkanRenderer::VulkanRenderer() {
 	m_logicalDevice = std::make_unique<LogicalDevice>(m_instance.get());
 	m_swapchain = std::make_unique<VulkanSwapChain>(m_instance.get(), m_physicalDevice.get(), m_logicalDevice.get());
 	m_renderPass = std::make_unique<VulkanRenderPass>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get());
-	m_graphicsPipeline = std::make_unique<GraphicsPipeline2>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get(), m_renderPass.get());
+	m_graphicsPipeline = std::make_unique<GraphicsPipeline>( m_logicalDevice.get(), m_physicalDevice.get(), m_renderPass.get(), m_swapchain.get());
 	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(), m_swapchain.get(), m_graphicsPipeline.get());
 };
 VulkanRenderer::~VulkanRenderer() = default;
-
+VulkanShader* vulkanShader = nullptr;;
 bool VulkanRenderer::Init(IWindow *window) {
     assert(window != nullptr);
 	try {
@@ -39,6 +40,11 @@ bool VulkanRenderer::Init(IWindow *window) {
 		m_logicalDevice->Init(m_physicalDevice.get());
 		m_swapchain->Init(m_surface);
 		m_renderPass->Init();
+		vulkanShader = new VulkanShader(m_logicalDevice.get());
+		vulkanShader->LoadFromFile("shaders/shader.glsl");
+		m_graphicsPipeline->SetShader(vulkanShader);
+		m_graphicsPipeline->SetPushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(float));
+
 		m_graphicsPipeline->Init();
 		m_swapchain->CreateFramebuffers(m_renderPass.get());
 		m_commandSystem->Init(m_physicalDevice->GetGraphicsQueueFamilyIndex());
@@ -93,35 +99,55 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char *> *ch
 }
 
 void VulkanRenderer::RenderFrame() {
-
 	uint32_t imageIndex = m_logicalDevice->GetHandle().acquireNextImageKHR(m_swapchain->GetHandle(), UINT64_MAX, m_imageAvailable).value;
 
-	// Reset and record command buffer for this image index with current time
-	m_commandSystem->GetCommandBuffer(imageIndex)->reset({});
-	m_commandSystem->GetCommandBuffer(imageIndex)->begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+	// Reset and record command buffer
+	auto cmdBuffer = m_commandSystem->GetCommandBuffer(imageIndex);
+	cmdBuffer->reset({});
+	cmdBuffer->begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
-	vk::ClearValue clearColor = vk::ClearColorValue(std::array<float,4>{0.1f, 0.1f, 1.0f, 1.0f});
-	vk::RenderPassBeginInfo renderPassBeginInfo(m_renderPass->GetHandle(), m_swapchain->GetFramebuffers()[imageIndex], {{0,0}, m_swapchain->GetSwapExtent()}, 1, &clearColor);
+	vk::ClearValue clearColor = vk::ClearColorValue(std::array<float, 4>{ 0.1f, 0.1f, 1.0f, 1.0f });
+	vk::RenderPassBeginInfo renderPassBeginInfo(
+		m_renderPass->GetHandle(),
+		m_swapchain->GetFramebuffers()[imageIndex],
+		{ {0, 0}, m_swapchain->GetSwapExtent() },
+		1, &clearColor
+	);
 
-	m_commandSystem->GetCommandBuffer(imageIndex)->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-	m_commandSystem->GetCommandBuffer(imageIndex)->bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetHandle());
+	cmdBuffer->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+	cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetHandle());
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<float> elapsed = currentTime - m_startTime;
 	float time = elapsed.count();
-	m_commandSystem->GetCommandBuffer(imageIndex)->pushConstants<float>(m_graphicsPipeline->GetPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, time);
+	m_graphicsPipeline->PushConstant(cmdBuffer,  vk::ShaderStageFlagBits::eVertex, 0, sizeof(float), &time);
 
-	m_commandSystem->GetCommandBuffer(imageIndex)->draw(3, 1, 0, 0);
-	m_commandSystem->GetCommandBuffer(imageIndex)->endRenderPass();
-	m_commandSystem->GetCommandBuffer(imageIndex)->end();
 
-	vk::SubmitInfo submitInfo(1, &m_imageAvailable, nullptr, 1, m_commandSystem->GetCommandBuffer(imageIndex), 1, &m_renderFinished);
+	cmdBuffer->draw(8526, 1, 0, 0);
+	cmdBuffer->endRenderPass();
+	cmdBuffer->end();
+
+	// Вставляем нужный флаг ожидания
+	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+	vk::SubmitInfo submitInfo(
+		1, &m_imageAvailable,
+		&waitStage,
+		1, &(*cmdBuffer),
+		1, &m_renderFinished
+	);
+
 	m_logicalDevice->GetGraphicsQueue().submit(submitInfo);
 
-	vk::PresentInfoKHR presentInfo(1, &m_renderFinished, 1, &m_swapchain->GetHandle(), &imageIndex);
+	vk::PresentInfoKHR presentInfo(
+		1, &m_renderFinished,
+		1, &m_swapchain->GetHandle(),
+		&imageIndex
+	);
 	m_logicalDevice->GetGraphicsQueue().presentKHR(presentInfo);
 
 	m_logicalDevice->GetGraphicsQueue().waitIdle();
 	m_currentFrame = (m_currentFrame + 1) % 2;
 }
+
 

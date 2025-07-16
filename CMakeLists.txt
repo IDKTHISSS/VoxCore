@@ -13,7 +13,7 @@ set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(libs/SDL)
 
 # === Vulkan ===
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS glslang SPIRV-Tools)
 
 # === GLM ===
 set(GLM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/glm")
@@ -54,12 +54,14 @@ target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${GLM_INCLUDE_DIR}
         libs/SDL/include
-        ${Vulkan_INCLUDE_DIRS}     # подключаем заголовки Vulkan SDK (включает vulkan.hpp)
+        ${Vulkan_INCLUDE_DIRS}
+        "$ENV{VULKAN_SDK}/Include"
 )
 target_link_libraries(VoxCore
         imgui
         SDL3-static
         Vulkan::Vulkan
+        "$ENV{VULKAN_SDK}/Lib/shaderc_shared.lib"
 )
 
 # === Unit Tests ===

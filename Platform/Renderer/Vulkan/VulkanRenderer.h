@@ -17,7 +17,7 @@
 class VulkanCommandSystem;
 class TrianglePipeline;
 class CommandSystem;
-class GraphicsPipeline2;
+class GraphicsPipeline;
 class VulkanRenderPass;
 class VulkanSwapChain;
 class LogicalDevice;
@@ -42,7 +42,7 @@ private:
     std::unique_ptr<LogicalDevice> m_logicalDevice;
     std::unique_ptr<VulkanSwapChain> m_swapchain;
     std::unique_ptr<VulkanRenderPass> m_renderPass;
-    std::unique_ptr<GraphicsPipeline2> m_graphicsPipeline;
+    std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
     vk::SurfaceKHR m_surface = nullptr;
     vk::Semaphore m_imageAvailable;

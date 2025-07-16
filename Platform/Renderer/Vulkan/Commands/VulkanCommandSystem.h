@@ -6,7 +6,7 @@
 
 #include "Platform/Renderer/Vulkan/Core/VulkanInstance.h"
 
-class GraphicsPipeline2;
+class GraphicsPipeline;
 class VulkanSwapChain;
 class VulkanRenderPass;
 class LogicalDevice;
@@ -14,7 +14,7 @@ class LogicalDevice;
 class VulkanCommandSystem {
 public:
     explicit VulkanCommandSystem(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanRenderPass* renderPass,
-        VulkanSwapChain* swapChain, GraphicsPipeline2* graphicsPipeline);
+        VulkanSwapChain* swapChain, GraphicsPipeline* graphicsPipeline);
     ~VulkanCommandSystem() = default;
     bool Init(uint32_t graphicsQueueFamilyIndex);
     void Cleanup();
@@ -43,7 +43,7 @@ private:
     LogicalDevice* m_logicalDevice;
     VulkanRenderPass* m_renderPass;
     VulkanSwapChain* m_swapChain;
-    GraphicsPipeline2* m_graphicsPipeline;
+    GraphicsPipeline* m_graphicsPipeline;
     VkCommandPool m_commandPool{};
     std::vector<vk::CommandBuffer> m_commandBuffers;
 
