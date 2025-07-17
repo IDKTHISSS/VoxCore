@@ -7,6 +7,9 @@
 ## Purpose
 This engine is being developed as a personal learning project to deeply understand Vulkan and game engine architecture. It is not intended for production use, but as an experimental and educational platform.
 
+## Branches
+- **main** – Stable branch. Contains the latest tested and (mostly) stable code. Recommended for users who want to try the engine.
+- **dev** – Development branch. Active development happens here. It may be broken, untested, or not even compile at times.
 
 ## Features (WIP)
 - 🧱 Custom voxel renderer powered by Vulkan
