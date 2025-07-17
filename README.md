@@ -3,6 +3,7 @@
 **VoxCore Game Engine** is a work-in-progress 3D voxel-based game engine built using **Vulkan**, **SDL3**, and **ImGui**. It is designed to be modular, lightweight, and highly extensible for voxel-style games and simulations.
 
 > ⚠️ This engine is currently under active development. Many features are incomplete or experimental. Breaking changes are expected.
+
 > 🎓 This engine is a personal learning project focused on exploring the Vulkan API and game engine architecture. It is not intended for production use, but serves as an experimental and educational platform.  
 
 ## Branches
