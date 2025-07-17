@@ -4,6 +4,10 @@
 
 > ⚠️ This engine is currently under active development. Many features are incomplete or experimental. Breaking changes are expected.
 
+## Purpose
+This engine is being developed as a personal learning project to deeply understand Vulkan and game engine architecture. It is not intended for production use, but as an experimental and educational platform.
+
+
 ## Features (WIP)
 - 🧱 Custom voxel renderer powered by Vulkan
 - 🖥️ Integrated ImGui-based UI system
