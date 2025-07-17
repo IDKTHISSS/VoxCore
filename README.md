@@ -31,8 +31,6 @@ This engine is being developed as a personal learning project to deeply understa
 |--------------|------------------------|----------|
 | VoxCraft     | Simple Minecraft clone | Planned  |
 
-Want to add your project here? Open a pull request!
-
 ## Build Instructions
 (Coming soon – build system, dependencies, and steps...)
 
