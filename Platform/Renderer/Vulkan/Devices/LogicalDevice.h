@@ -11,7 +11,7 @@ class PhysicalDevice;
 class LogicalDevice {
 public:
     LogicalDevice(VulkanInstance* instance);
-    ~LogicalDevice() = default;
+    ~LogicalDevice();
 
 
     bool Init(PhysicalDevice* physicalDevice);

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
 
 class IWindow;
 class IRenderer;
@@ -20,6 +21,10 @@ namespace Engine {
         // Starts the main application loop
         void Run();
 
+        VulkanRenderer* GetVulkanRenderer() {
+            return dynamic_cast<VulkanRenderer*>(renderer.get());
+        }
+
     protected:
         // Initializes application resources
         virtual void Init();
@@ -37,6 +42,7 @@ namespace Engine {
 
         void MainLoop();
         bool isRunning = true;
+        std::shared_ptr<UWorld> m_world;
         std::string appName = "Engine Application";
         std::string appVersion = "1.0.0";
     };

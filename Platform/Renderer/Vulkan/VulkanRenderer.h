@@ -11,8 +11,16 @@
 
 #include "Platform/Window/IWindow.h"
 #include <vulkan/vulkan.hpp>
+#include <glm/glm.hpp>
 
 #include "Core/VulkanInstance.h"
+#include "Camera.h"
+#include "Pipeline/GraphicsPipeline.h"
+
+struct CameraUBO {
+    glm::mat4 view;
+    glm::mat4 proj;
+};
 
 class VulkanCommandSystem;
 class TrianglePipeline;
@@ -29,13 +37,12 @@ class VulkanRenderer : public IRenderer {
 public:
     VulkanRenderer();
     ~VulkanRenderer() override;
-
-
-
-    bool Init(IWindow* window) override;
-    // Add more Vulkan-specific methods as needed
+    bool Init(IWindow* window, UWorld* world) override;
+    Camera* GetCamera() { return m_camera.get(); }
 
 private:
+
+    UWorld* m_world = nullptr;
     // Vulkan instance, device, etc. (placeholders for now)
     std::unique_ptr<VulkanInstance> m_instance;
     std::unique_ptr<PhysicalDevice> m_physicalDevice;
@@ -44,9 +51,13 @@ private:
     std::unique_ptr<VulkanRenderPass> m_renderPass;
     std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
+    std::unique_ptr<Camera> m_camera;
+    // uniform buffer для камеры
+    BufferResource m_cameraBuffer;
+    vk::DescriptorSetLayout m_cameraDescriptorSetLayout;
+    vk::DescriptorPool m_cameraDescriptorPool;
+    vk::DescriptorSet m_cameraDescriptorSet;
     vk::SurfaceKHR m_surface = nullptr;
-    vk::Semaphore m_imageAvailable;
-    vk::Semaphore m_renderFinished;
     uint32_t m_currentFrame = 0;
     std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;

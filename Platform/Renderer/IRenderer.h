@@ -6,13 +6,13 @@
 #include "../Window/IWindow.h"
 
 
-
+class UWorld;
 
 class IRenderer {
 public:
     virtual ~IRenderer() = default;
 
-    virtual bool Init(IWindow *window) = 0;
+    virtual bool Init(IWindow *window, UWorld* world) = 0;
     virtual void Cleanup() = 0;
     virtual void RenderFrame() = 0;
 };

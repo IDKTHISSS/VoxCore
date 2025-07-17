@@ -24,6 +24,9 @@ bool PhysicalDevice::Init(vk::SurfaceKHR surface) {
             m_graphicsQueueFamilyIndex = i;
             break;
         }
+        if (m_graphicsQueueFamilyIndex != -1) {
+            break;
+        }
     }
     return true;
 }

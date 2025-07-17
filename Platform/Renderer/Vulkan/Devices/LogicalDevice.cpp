@@ -10,6 +10,12 @@ LogicalDevice::LogicalDevice(VulkanInstance *instance) : m_vulkanInstance(instan
     // Constructor implementation
 }
 
+LogicalDevice::~LogicalDevice() {
+    if (m_logicalDevice) {
+        m_logicalDevice.destroy();
+    }
+}
+
 bool LogicalDevice::Init(PhysicalDevice* physicalDevice) {
     float priority = 1.0f;
     vk::DeviceQueueCreateInfo queueInfo({}, physicalDevice->GetGraphicsQueueFamilyIndex(), 1, &priority);

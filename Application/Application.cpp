@@ -9,9 +9,13 @@
 #include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include <chrono>
 #include <utility>
+#include <SDL3/SDL.h>
+#include <sstream>
 
 #include "../Core/CVar/CVar.h"
 #include "../Core/Log/Logger.h"
+#include "Core/ECS/BaseClasses/UWorld.h"
+#include "Core/ECS/Components/UTransformComponent.h"
 
 using namespace Engine;
 
@@ -20,6 +24,15 @@ CONVAR("w_size_width", 1920, "Game window width", CVAR_ARCHIVE);
 CONVAR("w_size_height", 1080, "Game window height", CVAR_ARCHIVE);
 
 Application::Application() = default;
+
+class TestCube : public AActor {
+    UCLASS(TestCube);
+public:
+    TestCube() {
+        AddComponent(std::make_shared<UTransformComponent>());
+       // AddComponent(std::make_shared<UMeshComponent>());
+    }
+};
 
 Application::Application(std::string title, int width, int height) {
     SET_CVAR("w_title", title);
@@ -42,7 +55,8 @@ void Application::Run() {
     }
     LOG_INFO("Creating Vulkan renderer.");
     renderer = std::make_unique<VulkanRenderer>();
-    if (!renderer->Init(window.get())) {
+    m_world = std::make_shared<UWorld>();
+    if (!renderer->Init(window.get(), m_world.get())) {
         LOG_ERROR("Failed to initialize Vulkan renderer.");
         return;
     }
@@ -59,7 +73,43 @@ void Application::Init() {
 
 // Updates application state (every frame)
 void Application::Update(float dt) {
-    // To be overridden in derived classes
+    VulkanRenderer* vkRenderer = GetVulkanRenderer();
+    if (!vkRenderer) return;
+    Camera* camera = vkRenderer->GetCamera();
+    if (!camera) return;
+
+    // Используем новый API окна для ввода
+    const auto& keyBuf = window->GetKeyBuffer();
+    const auto& mouse = window->GetMouseState();
+
+    float moveSpeed = (keyBuf[SDL_SCANCODE_LSHIFT] ? 8.0f : 3.0f) * dt;
+    glm::vec3 move(0.0f);
+    if (keyBuf[SDL_SCANCODE_W]) move.z += moveSpeed;
+    if (keyBuf[SDL_SCANCODE_S]) move.z -= moveSpeed;
+    if (keyBuf[SDL_SCANCODE_A]) move.x -= moveSpeed;
+    if (keyBuf[SDL_SCANCODE_D]) move.x += moveSpeed;
+    if (keyBuf[SDL_SCANCODE_SPACE]) move.y += moveSpeed;
+    if (keyBuf[SDL_SCANCODE_LCTRL]) move.y -= moveSpeed;
+    if (glm::length(move) > 0.0f) camera->Move(move);
+
+    // Захват мыши по ПКМ
+    static bool mouseCaptured = false;
+    static bool lastRightButton = false;
+
+    bool rightButton = mouse.buttons[SDL_BUTTON_RIGHT];
+    if (rightButton && !lastRightButton) { // нажата в этом кадре
+        mouseCaptured = !mouseCaptured;
+        window->SetRelativeMouseMode(mouseCaptured);
+    }
+    lastRightButton = rightButton;
+
+    if (mouseCaptured) {
+        float sensitivity = 0.12f;
+        camera->Rotate(mouse.dx * sensitivity, -mouse.dy * sensitivity);
+        const_cast<MouseState&>(mouse).dx = 0;
+        const_cast<MouseState&>(mouse).dy = 0;
+    }
+
 }
 
 // Shuts down the application and releases resources
@@ -69,6 +119,20 @@ void Application::Shutdown() {
 
 void Application::MainLoop() {
     auto lastTime = std::chrono::high_resolution_clock::now();
+    int frameCount = 0;
+    float fpsTimer = 0.0f;
+
+    glm::vec3 offset = glm::vec3(2.0f, 2.0f, 2.0f);
+
+    for (int x = 0; x < 3; ++x) {
+        for (int y = 0; y < 3; ++y) {
+            for (int z = 0; z < 3; ++z) {
+                auto cube = m_world->SpawnActor<TestCube>();
+                glm::vec3 pos = glm::vec3(x, y, z) * 2.0f - offset;
+                cube->GetComponent<UTransformComponent>()->SetPosition(pos);
+            }
+        }
+    }
     while (!window->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(now - lastTime).count();
@@ -77,5 +141,16 @@ void Application::MainLoop() {
         Update(dt);
         renderer->RenderFrame();
         window->SwapBuffers();
+        // FPS
+        frameCount++;
+        fpsTimer += dt;
+        if (fpsTimer >= 1.0f) {
+            std::ostringstream oss;
+            oss << "VoxCraft Beta | FPS: " << frameCount;
+            window->SetTitle(oss.str());
+            frameCount = 0;
+            fpsTimer = 0.0f;
+        }
     }
+    renderer->Cleanup();
 }

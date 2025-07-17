@@ -8,6 +8,8 @@
 #include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
 #include "Platform/Renderer/Vulkan/Devices/PhysicalDevice.h"
 #include "Platform/Renderer/Vulkan/RenderPass/VulkanRenderPass.h"
+#include "Platform/Renderer/Vulkan/Camera.h"
+#include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 
 GraphicsPipeline::GraphicsPipeline(LogicalDevice* device, PhysicalDevice* physicalDevice, VulkanRenderPass* renderPass,
     VulkanSwapChain* swapChain)
@@ -42,7 +44,7 @@ bool GraphicsPipeline::Init() {
     vk::Rect2D scissor({0, 0}, m_swapChain->GetSwapExtent());
     vk::PipelineViewportStateCreateInfo viewportState({}, 1, &viewport, 1, &scissor);
     vk::PipelineRasterizationStateCreateInfo rasterizer({}, false, false,
-                        vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise);
+                        vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise);
     rasterizer.setLineWidth(1.0f);
     vk::PipelineMultisampleStateCreateInfo multisampling({}, vk::SampleCountFlagBits::e1);
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -50,6 +52,13 @@ bool GraphicsPipeline::Init() {
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
     vk::PipelineColorBlendStateCreateInfo colorBlending({}, false, vk::LogicOp::eCopy, 1, &colorBlendAttachment);
+
+    vk::PipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.setDepthTestEnable(VK_TRUE);
+    depthStencil.setDepthWriteEnable(VK_TRUE);
+    depthStencil.setDepthCompareOp(vk::CompareOp::eLess);
+    depthStencil.setDepthBoundsTestEnable(VK_FALSE);
+    depthStencil.setStencilTestEnable(VK_FALSE);
 
     vk::PipelineLayoutCreateInfo layoutInfo({},
         static_cast<uint32_t>(m_descriptorSetLayouts.size()), m_descriptorSetLayouts.data(),
@@ -61,7 +70,7 @@ bool GraphicsPipeline::Init() {
         static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
         &vertexInput, &inputAssembly, nullptr,
         &viewportState, &rasterizer, &multisampling,
-        nullptr, &colorBlending, nullptr,
+        &depthStencil, &colorBlending, nullptr,
         m_pipelineLayout, m_renderPass->GetHandle());
 
     m_pipeline = m_logicalDevice->GetHandle().createGraphicsPipelines({}, pipelineInfo).value[0];
@@ -126,3 +135,6 @@ uint32_t GraphicsPipeline::FindMemoryType(uint32_t typeFilter, vk::MemoryPropert
     }
     throw std::runtime_error("Failed to find suitable memory type!");
 }
+
+// Явная инстанциация шаблона для CameraUBO
+template void GraphicsPipeline::UpdateBufferData<CameraUBO>(const BufferResource&, const CameraUBO&);

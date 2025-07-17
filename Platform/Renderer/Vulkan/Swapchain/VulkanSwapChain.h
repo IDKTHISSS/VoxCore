@@ -27,12 +27,16 @@ public:
 
 
 private:
-    VulkanInstance* m_vulkanInstance; // Pointer to the Vulkan instance
-    vk::SwapchainKHR m_swapchain; // Handle to the swapchain
-    PhysicalDevice* m_physicalDevice; // Pointer to the physical device
-    LogicalDevice* m_logicalDevice; // Pointer to the logical device
+    VulkanInstance* m_vulkanInstance;
+    vk::SwapchainKHR m_swapchain;
+    PhysicalDevice* m_physicalDevice;
+    LogicalDevice* m_logicalDevice;
     std::vector<vk::ImageView> m_imageViews;
     std::vector<vk::Framebuffer> m_framebuffers;
     vk::SurfaceFormatKHR m_surfaceFormat;
-    vk::Extent2D m_swapExtent; // Extent of the swapchain images
+    vk::Extent2D m_swapExtent;
+    vk::Image m_depthImage;
+    vk::DeviceMemory m_depthImageMemory;
+    vk::ImageView m_depthImageView;
+    vk::Format m_depthFormat = vk::Format::eD32Sfloat;
 };

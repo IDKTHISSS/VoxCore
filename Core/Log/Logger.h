@@ -38,14 +38,12 @@ namespace Engine::Core::Log {
     };
 }
 
-// Макросы
 #define LOG_RAW(level, category, msg) \
     ::Engine::Core::Log::Logger::Get().Log(level, category, msg, __FILE__, __LINE__, __FUNCTION__)
 
 #define LOGF_RAW(level, category, fmt, ...) \
     ::Engine::Core::Log::Logger::Get().Logf(level, category, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
 
-// Удобные макросы
 #define LOG_DEBUG(msg)  LOG_RAW(LogLevel::Debug, LOG_CATEGORY_DEFAULT, msg)
 #define LOG_INFO(msg)   LOG_RAW(LogLevel::Info,  LOG_CATEGORY_DEFAULT, msg)
 #define LOG_WARN(msg)   LOG_RAW(LogLevel::Warn,  LOG_CATEGORY_DEFAULT, msg)

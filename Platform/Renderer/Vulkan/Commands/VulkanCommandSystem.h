@@ -15,7 +15,10 @@ class VulkanCommandSystem {
 public:
     explicit VulkanCommandSystem(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanRenderPass* renderPass,
         VulkanSwapChain* swapChain, GraphicsPipeline* graphicsPipeline);
-    ~VulkanCommandSystem() = default;
+    ~VulkanCommandSystem()
+    {
+        Cleanup();
+    }
     bool Init(uint32_t graphicsQueueFamilyIndex);
     void Cleanup();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -23,12 +26,12 @@ public:
         return &m_commandBuffers[frameIndex];
     }
 
-    [[nodiscard]] VkSemaphore GetImageAvailableSemaphore(uint32_t frameIndex) const {
-        return m_imageAvailableSemaphores[frameIndex];
+    [[nodiscard]] vk::Semaphore& GetImageAvailableSemaphore() {
+        return m_imageAvailable;
     }
 
-    [[nodiscard]] VkSemaphore GetRenderFinishedSemaphore(uint32_t frameIndex) const {
-        return m_renderFinishedSemaphores[frameIndex];
+    [[nodiscard]] vk::Semaphore& GetRenderFinishedSemaphore() {
+        return m_renderFinished;
     }
 
     [[nodiscard]] VkFence GetInFlightFence(uint32_t frameIndex) const {
@@ -46,9 +49,10 @@ private:
     GraphicsPipeline* m_graphicsPipeline;
     VkCommandPool m_commandPool{};
     std::vector<vk::CommandBuffer> m_commandBuffers;
-
-    std::vector<VkSemaphore> m_imageAvailableSemaphores;
-    std::vector<VkSemaphore> m_renderFinishedSemaphores;
+    vk::Semaphore m_imageAvailable;
+    vk::Semaphore m_renderFinished;
+    std::vector<vk::Semaphore> m_imageAvailableSemaphores; // TODO Под вопросомм
+    std::vector<vk::Semaphore> m_renderFinishedSemaphores; // TODO Под вопросомм
     std::vector<VkFence> m_inFlightFences;
 };
 

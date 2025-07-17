@@ -4,6 +4,7 @@
 
 #ifndef SDL3WINDOW_H
 #define SDL3WINDOW_H
+#include <array>
 #include <string>
 
 #include "IWindow.h"
@@ -20,10 +21,18 @@ public:
     void SwapBuffers() override;
     bool ShouldClose() const override;
     void* GetNativeHandle() override;
+    const std::array<bool, 512>& GetKeyBuffer() const override { return m_keyBuffer; }
+    const MouseState& GetMouseState() const override { return m_mouseState; }
+    void SetRelativeMouseMode(bool enable) override;
+    bool IsRelativeMouseMode() const override;
+    void SetTitle(const std::string& title) override;
 
 private:
     SDL_Window* m_window = nullptr;
     bool m_shouldClose = false;
+    std::array<bool, 512> m_keyBuffer{};
+    MouseState m_mouseState;
+    bool m_relativeMouseMode = false;
 };
 
 

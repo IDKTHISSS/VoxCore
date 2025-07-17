@@ -22,7 +22,9 @@ struct BufferResource {
 class GraphicsPipeline : public IPipeline {
 public:
     GraphicsPipeline(LogicalDevice* device, PhysicalDevice* physicalDevice, VulkanRenderPass* renderPass, VulkanSwapChain* swapChain);
-    ~GraphicsPipeline() override = default;
+    ~GraphicsPipeline() override {
+        GraphicsPipeline::Cleanup();
+    };
 
     bool Init() override;
     void Bind(vk::CommandBuffer cmdBuffer) const override;
