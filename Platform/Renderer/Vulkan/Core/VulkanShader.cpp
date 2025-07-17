@@ -5,6 +5,7 @@
 #include "VulkanShader.h"
 
 #include <fstream>
+#include <sstream>
 
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"

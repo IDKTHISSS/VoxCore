@@ -38,7 +38,9 @@ bool GraphicsPipeline::Init() {
         vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragModule, "main")
     };
 
-    vk::PipelineVertexInputStateCreateInfo vertexInput;
+    auto bindingDesc = Vertex::getBindingDescription();
+    auto attrDesc = Vertex::getAttributeDescriptions();
+    vk::PipelineVertexInputStateCreateInfo vertexInput({}, 1, &bindingDesc, static_cast<uint32_t>(attrDesc.size()), attrDesc.data());
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vk::PrimitiveTopology::eTriangleList);
     vk::Viewport viewport(0, 0, (float)m_swapChain->GetSwapExtent().width, (float)m_swapChain->GetSwapExtent().height, 0, 1);
     vk::Rect2D scissor({0, 0}, m_swapChain->GetSwapExtent());

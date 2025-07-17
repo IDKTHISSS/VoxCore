@@ -16,6 +16,7 @@
 #include "../Core/Log/Logger.h"
 #include "Core/ECS/BaseClasses/UWorld.h"
 #include "Core/ECS/Components/UTransformComponent.h"
+#include "Core/ECS/Components/UMeshComponent.h"
 
 using namespace Engine;
 
@@ -30,7 +31,9 @@ class TestCube : public AActor {
 public:
     TestCube() {
         AddComponent(std::make_shared<UTransformComponent>());
-       // AddComponent(std::make_shared<UMeshComponent>());
+        auto mesh = std::make_shared<UMeshComponent>();
+        mesh->SetWeirdMesh();
+        AddComponent(mesh);
     }
 };
 
@@ -92,12 +95,10 @@ void Application::Update(float dt) {
     if (keyBuf[SDL_SCANCODE_LCTRL]) move.y -= moveSpeed;
     if (glm::length(move) > 0.0f) camera->Move(move);
 
-    // Захват мыши по ПКМ
     static bool mouseCaptured = false;
     static bool lastRightButton = false;
-
     bool rightButton = mouse.buttons[SDL_BUTTON_RIGHT];
-    if (rightButton && !lastRightButton) { // нажата в этом кадре
+    if (rightButton && !lastRightButton) {
         mouseCaptured = !mouseCaptured;
         window->SetRelativeMouseMode(mouseCaptured);
     }
@@ -122,7 +123,7 @@ void Application::MainLoop() {
     int frameCount = 0;
     float fpsTimer = 0.0f;
 
-    glm::vec3 offset = glm::vec3(2.0f, 2.0f, 2.0f);
+    glm::vec3 offset = glm::vec3(1.0f, 3.0f, 2.0f);
 
     for (int x = 0; x < 3; ++x) {
         for (int y = 0; y < 3; ++y) {

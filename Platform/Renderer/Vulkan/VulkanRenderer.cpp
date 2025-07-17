@@ -19,6 +19,19 @@
 #include "Camera.h"
 #include "Core/ECS/BaseClasses/UWorld.h"
 #include "Core/ECS/Components/UTransformComponent.h"
+#include "Core/ECS/Components/UMeshComponent.h"
+#include <unordered_map>
+
+
+struct MeshBuffers {
+    vk::Buffer vertexBuffer;
+    vk::DeviceMemory vertexMemory;
+    vk::Buffer indexBuffer;
+    vk::DeviceMemory indexMemory;
+    uint32_t indexCount;
+};
+
+std::unordered_map<AActor*, MeshBuffers> m_meshBuffers;
 
 
 VulkanRenderer::VulkanRenderer() {
@@ -197,6 +210,48 @@ void VulkanRenderer::RenderFrame() {
     if (m_world) {
         auto actors = m_world->GetActors();
         for (auto& actor : actors) {
+            auto mesh = actor->GetComponent<UMeshComponent>();
+            if (!mesh) continue;
+            if (m_meshBuffers.find(actor.get()) == m_meshBuffers.end()) {
+                std::vector<Vertex> vertices;
+                std::vector<uint32_t> indices;
+                for (size_t i = 0; i < mesh->indices.size(); i += 3) {
+                    int face = i / 6; // каждые 6 индексов — одна грань
+                    glm::vec3 color = mesh->colors.size() > face ? mesh->colors[face] : glm::vec3(1,1,1);
+                    for (int j = 0; j < 3; ++j) {
+                        uint32_t idx = mesh->indices[i + j];
+                        vertices.push_back({ mesh->vertices[idx], color });
+                        indices.push_back((uint32_t)vertices.size() - 1);
+                    }
+                }
+                vk::DeviceSize vSize = sizeof(Vertex) * vertices.size();
+                vk::BufferCreateInfo vBufInfo({}, vSize, vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive);
+                vk::Buffer vertexBuffer = m_logicalDevice->GetHandle().createBuffer(vBufInfo);
+                vk::MemoryRequirements vMemReq = m_logicalDevice->GetHandle().getBufferMemoryRequirements(vertexBuffer);
+                uint32_t vMemType = m_graphicsPipeline->FindMemoryType(vMemReq.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+                vk::MemoryAllocateInfo vAllocInfo(vMemReq.size, vMemType);
+                vk::DeviceMemory vertexMemory = m_logicalDevice->GetHandle().allocateMemory(vAllocInfo);
+                m_logicalDevice->GetHandle().bindBufferMemory(vertexBuffer, vertexMemory, 0);
+                void* vData = m_logicalDevice->GetHandle().mapMemory(vertexMemory, 0, vSize);
+                memcpy(vData, vertices.data(), vSize);
+                m_logicalDevice->GetHandle().unmapMemory(vertexMemory);
+                vk::DeviceSize iSize = sizeof(uint32_t) * indices.size();
+                vk::BufferCreateInfo iBufInfo({}, iSize, vk::BufferUsageFlagBits::eIndexBuffer, vk::SharingMode::eExclusive);
+                vk::Buffer indexBuffer = m_logicalDevice->GetHandle().createBuffer(iBufInfo);
+                vk::MemoryRequirements iMemReq = m_logicalDevice->GetHandle().getBufferMemoryRequirements(indexBuffer);
+                uint32_t iMemType = m_graphicsPipeline->FindMemoryType(iMemReq.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+                vk::MemoryAllocateInfo iAllocInfo(iMemReq.size, iMemType);
+                vk::DeviceMemory indexMemory = m_logicalDevice->GetHandle().allocateMemory(iAllocInfo);
+                m_logicalDevice->GetHandle().bindBufferMemory(indexBuffer, indexMemory, 0);
+                void* iData = m_logicalDevice->GetHandle().mapMemory(indexMemory, 0, iSize);
+                memcpy(iData, indices.data(), iSize);
+                m_logicalDevice->GetHandle().unmapMemory(indexMemory);
+                m_meshBuffers[actor.get()] = { vertexBuffer, vertexMemory, indexBuffer, indexMemory, (uint32_t)indices.size() };
+            }
+            auto& buffers = m_meshBuffers[actor.get()];
+            vk::DeviceSize offsets[] = { 0 };
+            cmdBuffer->bindVertexBuffers(0, 1, &buffers.vertexBuffer, offsets);
+            cmdBuffer->bindIndexBuffer(buffers.indexBuffer, 0, vk::IndexType::eUint32);
             auto transform = actor->GetComponent<UTransformComponent>();
             glm::mat4 model = glm::mat4(1.0f);
             if (transform) {
@@ -207,7 +262,7 @@ void VulkanRenderer::RenderFrame() {
                 float time;
             } pushConsts{model, time};
             m_graphicsPipeline->PushConstant(cmdBuffer, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants), &pushConsts);
-            cmdBuffer->draw(36, 1, 0, 0);
+            cmdBuffer->drawIndexed(buffers.indexCount, 1, 0, 0, 0);
         }
     }
 

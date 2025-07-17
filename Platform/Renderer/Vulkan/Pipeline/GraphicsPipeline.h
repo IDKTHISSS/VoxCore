@@ -4,6 +4,7 @@
 
 #pragma once
 #include "IPipeline.h"
+#include "glm/vec3.hpp"
 #include "Platform/Renderer/Vulkan/Core/VulkanShader.h"
 #include "Platform/Renderer/Vulkan/Swapchain/VulkanSwapChain.h"
 
@@ -18,6 +19,7 @@ struct BufferResource {
     vk::DescriptorBufferInfo bufferInfo;
     vk::DescriptorSet descriptorSet;
 };
+
 
 class GraphicsPipeline : public IPipeline {
 public:
@@ -44,9 +46,9 @@ public:
                                         vk::BufferUsageFlags usage, uint32_t binding);
     template<typename T>
     void UpdateBufferData(const BufferResource& resource, const T& data);
+    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
 private:
-    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
     LogicalDevice* m_logicalDevice;
     PhysicalDevice* m_physicalDevice;
@@ -59,4 +61,28 @@ private:
 
     vk::PushConstantRange m_pushConstantRange{};
     std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
+};
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+    static vk::VertexInputBindingDescription getBindingDescription() {
+        vk::VertexInputBindingDescription bindingDesc{};
+        bindingDesc.binding = 0;
+        bindingDesc.stride = sizeof(Vertex);
+        bindingDesc.inputRate = vk::VertexInputRate::eVertex;
+        return bindingDesc;
+    }
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
+        std::array<vk::VertexInputAttributeDescription, 2> attr{};
+        attr[0].binding = 0;
+        attr[0].location = 0;
+        attr[0].format = vk::Format::eR32G32B32Sfloat;
+        attr[0].offset = offsetof(Vertex, position);
+        attr[1].binding = 0;
+        attr[1].location = 1;
+        attr[1].format = vk::Format::eR32G32B32Sfloat;
+        attr[1].offset = offsetof(Vertex, color);
+        return attr;
+    }
 };

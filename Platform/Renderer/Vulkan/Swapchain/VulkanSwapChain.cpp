@@ -36,14 +36,11 @@ bool VulkanSwapChain::Init(vk::SurfaceKHR surface) {
     auto presentModes = m_physicalDevice->GetHandle().getSurfacePresentModesKHR(surface);
     auto surfaceCaps = m_physicalDevice->GetHandle().getSurfaceCapabilitiesKHR(surface);
     m_surfaceFormat = formats[0];
-    vk::PresentModeKHR presentMode = vk::PresentModeKHR::eImmediate;
+    vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     for (auto pm : presentModes) {
-        if (pm == vk::PresentModeKHR::eImmediate) {
-            presentMode = vk::PresentModeKHR::eImmediate;
-            break;
-        }
         if (pm == vk::PresentModeKHR::eMailbox) {
             presentMode = vk::PresentModeKHR::eMailbox;
+            break;
         }
     }
     m_swapExtent = surfaceCaps.currentExtent;
