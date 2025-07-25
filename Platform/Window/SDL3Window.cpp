@@ -21,7 +21,7 @@ SDL3Window::~SDL3Window() {
 bool SDL3Window::Create(int width, int height, const std::string &title) {
     int SDLInitStatus = SDL_Init(SDL_INIT_VIDEO);
     if (SDLInitStatus != 1) {
-        LOGF_ERROR("Failed to initialize SDL - %s", SDL_GetError());
+        LOG_FATAL("Window", "Failed to initialize SDL - {}", SDL_GetError());
         return false;
     }
     m_window = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_VULKAN);

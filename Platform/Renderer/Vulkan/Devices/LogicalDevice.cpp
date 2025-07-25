@@ -5,6 +5,7 @@
 #include "LogicalDevice.h"
 
 #include "PhysicalDevice.h"
+#include "Core/Log/Logger.h"
 
 LogicalDevice::LogicalDevice(VulkanInstance *instance) : m_vulkanInstance(instance) {
     // Constructor implementation
@@ -27,5 +28,6 @@ bool LogicalDevice::Init(PhysicalDevice* physicalDevice) {
     m_logicalDevice = physicalDevice->GetHandle().createDevice(deviceInfo);
     VULKAN_HPP_DEFAULT_DISPATCHER.init(m_logicalDevice);
     m_graphicsQueue = m_logicalDevice.getQueue(physicalDevice->GetGraphicsQueueFamilyIndex(), 0);
+    LOG_INFO("Vulkan", "Logical device created with {} extensions.", m_deviceExtensions.size());
     return true;
 }

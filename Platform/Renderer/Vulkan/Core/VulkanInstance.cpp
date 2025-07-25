@@ -33,7 +33,6 @@ bool VulkanInstance::Init() {
     uint32_t extCount = 0;
     char const* const* exts = SDL_Vulkan_GetInstanceExtensions(&extCount);
     std::vector<const char*> extensions(exts, exts + extCount);
-
     vk::InstanceCreateInfo instanceInfo({}, &m_appInfo, 0, nullptr, extCount, extensions.data());
     const std::vector<const char*> layers = {
         "VK_LAYER_KHRONOS_validation"
@@ -42,5 +41,7 @@ bool VulkanInstance::Init() {
     instanceInfo.ppEnabledLayerNames = layers.data();
     m_instance = vk::createInstance(instanceInfo);
     VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
+    LOG_INFO("Vulkan", "Vulkan instance created with {} extensions and {} layers.",
+             extensions.size(), layers.size());
     return true;
 }

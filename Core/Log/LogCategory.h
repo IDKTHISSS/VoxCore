@@ -1,13 +1,14 @@
 #pragma once
-#include <string>
+#include <string_view>
 
 struct LogCategory {
-    const char* name;
+    std::string_view name;
 
-    constexpr LogCategory(const char* n) : name(n) {}
+    constexpr LogCategory(std::string_view n) : name(n) {}
 };
 
 #define LOG_CATEGORY_DEFAULT LogCategory("Default")
 #define LOG_CATEGORY_RENDER  LogCategory("Render")
+#define LOG_CATEGORY_SHADER  LogCategory("Shader")
 #define LOG_CATEGORY_WORLD   LogCategory("World")
 #define LOG_CATEGORY_IO      LogCategory("IO")

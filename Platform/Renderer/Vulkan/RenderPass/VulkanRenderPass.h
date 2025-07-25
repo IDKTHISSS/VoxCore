@@ -13,11 +13,7 @@ class VulkanRenderPass {
 public:
     VulkanRenderPass(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanSwapChain* swapchain);
     ~VulkanRenderPass();
-
-    // Initialize the physical device with the given Vulkan instance
     bool Init();
-
-    // Get the physical device handle
     vk::RenderPass& GetHandle() { return m_renderPass; }
 
 private:

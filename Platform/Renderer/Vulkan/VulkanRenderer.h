@@ -39,11 +39,10 @@ public:
     ~VulkanRenderer() override;
     bool Init(IWindow* window, UWorld* world) override;
     Camera* GetCamera() { return m_camera.get(); }
-
+    uint32_t GetCurrentFrame() const { return m_currentFrame; }
 private:
 
     UWorld* m_world = nullptr;
-    // Vulkan instance, device, etc. (placeholders for now)
     std::unique_ptr<VulkanInstance> m_instance;
     std::unique_ptr<PhysicalDevice> m_physicalDevice;
     std::unique_ptr<LogicalDevice> m_logicalDevice;
@@ -52,17 +51,13 @@ private:
     std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
     std::unique_ptr<Camera> m_camera;
-    // uniform buffer для камеры
-    BufferResource m_cameraBuffer;
+
     vk::DescriptorSetLayout m_cameraDescriptorSetLayout;
-    vk::DescriptorPool m_cameraDescriptorPool;
-    vk::DescriptorSet m_cameraDescriptorSet;
+
     vk::SurfaceKHR m_surface = nullptr;
     uint32_t m_currentFrame = 0;
     std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;
-
-    bool checkInstanceExtensionSupport(std::vector<const char*> * checkExtensions);
     void RenderFrame() override;
 
 };

@@ -1,9 +1,8 @@
 //
-// Created by IDKTHIS on 16.07.2025.
+// Created by IDKTHIS on 19.07.2025.
 //
 
 #include "VulkanShader.h"
-
 #include <fstream>
 #include <sstream>
 
@@ -37,15 +36,6 @@ shaderc_shader_kind VulkanShader::GetShadercKind(ShaderStage stage) {
     }
 }
 
-vk::ShaderStageFlagBits VulkanShader::ConvertToShaderStage(ShaderStage stage) {
-    switch (stage) {
-        case ShaderStage::Vertex:   return vk::ShaderStageFlagBits::eVertex;
-        case ShaderStage::Fragment: return vk::ShaderStageFlagBits::eFragment;
-        case ShaderStage::Compute:  return vk::ShaderStageFlagBits::eCompute;
-        default: throw std::runtime_error("Unsupported shader stage");
-    }
-}
-
 std::vector<uint32_t> VulkanShader::CompileGLSL(const std::string& source, shaderc_shader_kind kind) {
     shaderc::Compiler compiler;
     shaderc::CompileOptions options;
@@ -63,7 +53,7 @@ std::vector<uint32_t> VulkanShader::CompileGLSL(const std::string& source, shade
     );
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        LOG_ERROR("Shader", "Shader compilation failed: %s\n", result.GetErrorMessage().c_str());
+        LOG_ERROR("Shader", "Shader compilation failed: {}\n", result.GetErrorMessage());
         throw std::runtime_error("Shader compilation failed: " + result.GetErrorMessage());
     }
     return {result.cbegin(), result.cend()};
@@ -72,7 +62,7 @@ std::vector<uint32_t> VulkanShader::CompileGLSL(const std::string& source, shade
 void VulkanShader::LoadFromFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        LOG_ERROR("Shader", "Failed to open shader file: %s\n", filepath.c_str());
+         LOG_ERROR("Shader", "Failed to open shader file: {}\n", filepath.c_str());
         throw std::runtime_error("Failed to open shader file: " + filepath);
     }
 
@@ -123,7 +113,7 @@ const std::unordered_map<ShaderStage, vk::ShaderModule>& VulkanShader::GetShader
 
 vk::ShaderModule& VulkanShader::GetShaderModule(const std::string &stageName) {
     auto map = StringToShaderStage();
-    auto it = map.find(stageName);
+    auto it = map.find(stageName);  
     if (it == map.end()) {
         throw std::runtime_error("Unknown shader stage: " + stageName);
     }

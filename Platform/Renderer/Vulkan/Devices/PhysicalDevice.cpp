@@ -4,6 +4,8 @@
 
 #include "PhysicalDevice.h"
 
+#include "Core/Log/Logger.h"
+
 PhysicalDevice::PhysicalDevice(VulkanInstance* instance) :  m_vulkanInstance(instance) {
 
 }
@@ -13,20 +15,64 @@ PhysicalDevice::~PhysicalDevice() {
 }
 
 bool PhysicalDevice::Init(vk::SurfaceKHR surface) {
-    uint32_t queueIndex = 0;
     auto gpus = m_vulkanInstance->GetInstance().enumeratePhysicalDevices();
-    for (auto& gpu : gpus) {
-        auto props = gpu.getQueueFamilyProperties();
-        for (uint32_t i = 0; i < props.size(); ++i) {
-            if (!(props[i].queueFlags & vk::QueueFlagBits::eGraphics) && gpu.getSurfaceSupportKHR(i, surface))
-                continue;
-            m_physicalDevice = gpu;
-            m_graphicsQueueFamilyIndex = i;
-            break;
+    vk::PhysicalDeviceMemoryProperties bestMemoryProperties;
+    size_t maxVideoMemory = 0;
+
+    for (const auto& gpu : gpus) {
+        auto memoryProperties = gpu.getMemoryProperties();
+        auto queueProps = gpu.getQueueFamilyProperties();
+
+        int graphicsIndex = -1;
+        int presentIndex = -1;
+
+        for (uint32_t i = 0; i < queueProps.size(); ++i) {
+            if (queueProps[i].queueFlags & vk::QueueFlagBits::eGraphics)
+                graphicsIndex = i;
+            if (gpu.getSurfaceSupportKHR(i, surface))
+                presentIndex = i;
         }
-        if (m_graphicsQueueFamilyIndex != -1) {
-            break;
+
+        if (graphicsIndex == -1 || presentIndex == -1)
+            continue;
+
+        size_t totalVideoMemory = 0;
+        for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; i++) {
+            if (memoryProperties.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
+                totalVideoMemory += memoryProperties.memoryHeaps[i].size;
+            }
+        }
+
+        if (totalVideoMemory > maxVideoMemory) {
+            m_physicalDevice = gpu;
+            m_graphicsQueueFamilyIndex = graphicsIndex;
+            m_presentQueueFamilyIndex = presentIndex;
+            maxVideoMemory = totalVideoMemory;
+            bestMemoryProperties = memoryProperties;
         }
     }
+
+    if (!m_physicalDevice) {
+        LOG_ERROR("Vulkan", "Failed to find a suitable GPU with graphics and present support.");
+        return false;
+    }
+
+    auto deviceProps = m_physicalDevice.getProperties();
+    LOG_INFO("Vulkan", "Selected GPU: {} with {}GB VRAM",
+             deviceProps.deviceName.data(), maxVideoMemory / (1024 * 1024 * 1024));
     return true;
 }
+
+vk::Format PhysicalDevice::FindSupportedFormat(const std::vector<vk::Format> &candidates, const vk::ImageTiling tiling,
+    const vk::FormatFeatureFlags features) const {
+    for (const auto& format : candidates) {
+        vk::FormatProperties props = m_physicalDevice.getFormatProperties(format);
+        if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+    return vk::Format::eD16Unorm;
+}
+

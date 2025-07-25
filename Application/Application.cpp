@@ -46,32 +46,35 @@ Application::Application(std::string title, int width, int height) {
 Application::~Application() = default;
 
 void Application::Run() {
-    Core::Log::Logger::Get().EnableColor(false);
-    LOG_INFO("Initializing engine.");
+    Logger::instance().add_output("*", std::cout);
+    LOG_INFO("Application", "Initializing engine.");
     Init();
-    LOG_INFO("Initialization successful.");
-    LOG_INFO("Creating window.");
+    LOG_INFO("Application", "Initialization successful.");
+    LOG_INFO("Application", "Creating window.");
     window = std::make_unique<SDL3Window>();
     if (!window->Create(GET_CVAR(int, "w_size_width"), GET_CVAR(int, "w_size_height"), GET_CVAR(std::string, "w_title"))) {
-        LOG_ERROR("Failed to create window.");
         return;
     }
-    LOG_INFO("Creating Vulkan renderer.");
+    LOG_INFO("Application", "Creating Vulkan renderer.");
     renderer = std::make_unique<VulkanRenderer>();
     m_world = std::make_shared<UWorld>();
     if (!renderer->Init(window.get(), m_world.get())) {
-        LOG_ERROR("Failed to initialize Vulkan renderer.");
+        LOG_ERROR("Application", "Failed to initialize Vulkan renderer.");
         return;
     }
 
-    LOG_INFO("Starting main loop.");
+    LOG_INFO("Application", "Starting main loop.");
     MainLoop();
+    LOG_INFO("Application", "Main loop terminated. Shutting down renderer.");
+    renderer->Cleanup();
+    LOG_INFO("Application", "Renderer cleaned up. Executing shutdown procedures.");
     Shutdown();
+    LOG_INFO("Application", "Shutdown complete.");
 }
 
-// Initializes application resources
+// Initializes application dependencies, modules, and resources
 void Application::Init() {
-    // To be overridden in derived classes
+    // Here will be initialization of modules, resources, settings, convars, etc.
 }
 
 // Updates application state (every frame)
@@ -115,7 +118,7 @@ void Application::Update(float dt) {
 
 // Shuts down the application and releases resources
 void Application::Shutdown() {
-    // To be overridden in derived classes
+    // To be implemented: here will be shutdown of modules, resources, convars, etc.
 }
 
 void Application::MainLoop() {
@@ -153,5 +156,5 @@ void Application::MainLoop() {
             fpsTimer = 0.0f;
         }
     }
-    renderer->Cleanup();
+
 }

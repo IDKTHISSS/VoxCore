@@ -4,9 +4,10 @@
 
 #pragma once
 
-#include "Platform/Renderer/IShader.h"
 #include <vulkan/vulkan.hpp>
 #include <shaderc/shaderc.hpp>
+
+#include "Platform/Renderer/Common/IShader.h"
 
 
 class LogicalDevice;
@@ -21,13 +22,14 @@ public:
 
     const std::unordered_map<ShaderStage, vk::ShaderModule>& GetShaderModules() const;
     vk::ShaderModule& GetShaderModule(const std::string& stageName);
-
+    static shaderc_shader_kind GetShadercKind(ShaderStage stage);
+    static vk::ShaderStageFlagBits ConvertToShaderStage(ShaderStage stage);
 private:
     LogicalDevice* m_logicalDevice;
     std::unordered_map<ShaderStage, std::vector<uint32_t>> m_spirvCode;
     std::unordered_map<ShaderStage, vk::ShaderModule> m_shaderModules;
 
     std::unordered_map<std::string, ShaderStage> StringToShaderStage();
-    shaderc_shader_kind GetShadercKind(ShaderStage stage);
+
     std::vector<uint32_t> CompileGLSL(const std::string& source, shaderc_shader_kind kind);
 };
