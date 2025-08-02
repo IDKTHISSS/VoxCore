@@ -3,7 +3,7 @@
 //
 #include <thread>
 #include <gtest/gtest.h>
-#include "Platform/Window/SDL3Window.h"
+#include "../../Platform/Window/SDL3/SDL3Window.h"
 
 TEST(SDLWindowTest, CanCreateWindow) {
     std::unique_ptr<IWindow> window = std::make_unique<SDL3Window>();

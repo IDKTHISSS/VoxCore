@@ -8,27 +8,31 @@
 #include <cstdint>
 #include <array>
 
-struct MouseState {
-    int x = 0, y = 0; // позиция
-    int dx = 0, dy = 0; // дельта за кадр
-    bool buttons[8] = {false}; // до 8 кнопок мыши
-};
+class WindowInputComponent;
 
 class IWindow {
 public:
     virtual ~IWindow() = default;
 
-    virtual bool Create(int width, int height, const std::string& title) = 0;
+    virtual bool Create(int width, int height, const std::string& title) {
+        m_width = width;
+        m_height = height;
+        return true;
+    };
     virtual void PollEvents() = 0;
     virtual void SwapBuffers() = 0;
     virtual bool ShouldClose() const = 0;
 
     virtual void* GetNativeHandle() = 0;
 
-    // --- Новый API для ввода ---
-    virtual const std::array<bool, 512>& GetKeyBuffer() const = 0;
-    virtual const MouseState& GetMouseState() const = 0;
     virtual void SetRelativeMouseMode(bool enable) = 0;
-    virtual bool IsRelativeMouseMode() const = 0;
     virtual void SetTitle(const std::string& title) = 0;
+    [[nodiscard]] uint32_t GetWidth() const { return m_width; }
+    [[nodiscard]] uint32_t GetHeight() const { return m_height; }
+    WindowInputComponent *GetInputComponent() { return inputComponent; }
+protected:
+    WindowInputComponent *inputComponent = nullptr;
+private:
+    uint32_t m_width;
+    uint32_t m_height;
 };

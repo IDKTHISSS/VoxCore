@@ -8,7 +8,7 @@
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Vulkan/RenderPass/VulkanRenderPass.h"
 
-
+CONVAR("r_vsync_enabled", true, "Enable or disable VSync for the Vulkan swapchain", CVAR_RUNTIME_ONLY);
 
 VulkanSwapChain::VulkanSwapChain(VulkanInstance *instance, PhysicalDevice* physicalDevice, LogicalDevice* logicalDevice) :
     m_vulkanInstance(instance), m_physicalDevice(physicalDevice), m_logicalDevice(logicalDevice) {
@@ -16,13 +16,16 @@ VulkanSwapChain::VulkanSwapChain(VulkanInstance *instance, PhysicalDevice* physi
 }
 
 VulkanSwapChain::~VulkanSwapChain() {
-    for (auto& view : m_imageViews) {
-        m_logicalDevice->GetHandle().destroyImageView(view);
-    }
+
     for (auto& fb : m_framebuffers) {
         m_logicalDevice->GetHandle().destroyFramebuffer(fb);
     }
     m_framebuffers.clear();
+    for (auto& view : m_imageViews) {
+        m_logicalDevice->GetHandle().destroyImageView(view);
+    }
+
+
     if (m_depthImageView) {
         m_logicalDevice->GetHandle().destroyImageView(m_depthImageView);
         m_depthImageView = nullptr;
@@ -41,7 +44,7 @@ VulkanSwapChain::~VulkanSwapChain() {
 
 }
 
-bool VulkanSwapChain::Init(vk::SurfaceKHR surface) {
+bool VulkanSwapChain::Init(vk::SurfaceKHR surface, vk::Extent2D extent) {
     auto formats = m_physicalDevice->GetHandle().getSurfaceFormatsKHR(surface);
     auto presentModes = m_physicalDevice->GetHandle().getSurfacePresentModesKHR(surface);
     auto surfaceCaps = m_physicalDevice->GetHandle().getSurfaceCapabilitiesKHR(surface);
@@ -53,14 +56,17 @@ bool VulkanSwapChain::Init(vk::SurfaceKHR surface) {
             break;
             }
     }
-    vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
-    for (auto pm : presentModes) {
-        if (pm == vk::PresentModeKHR::eMailbox) {
-            presentMode = vk::PresentModeKHR::eMailbox;
-            break;
+    vk::PresentModeKHR presentMode = vk::PresentModeKHR::eImmediate;
+    if (GET_CVAR(bool, "r_vsync_enabled")) {
+        presentMode = vk::PresentModeKHR::eFifo;
+        for (auto pm : presentModes) {
+            if (pm == vk::PresentModeKHR::eMailbox) {
+                presentMode = vk::PresentModeKHR::eMailbox;
+                break;
+            }
         }
     }
-    m_swapExtent = surfaceCaps.currentExtent;
+    m_swapExtent = extent;
     LOG_INFO("Vulkan", "Swapchain surface format: {}, present mode: {}, extent: {}x{}",
              vk::to_string(m_surfaceFormat.format), vk::to_string(presentMode), m_swapExtent.width, m_swapExtent.height);
     uint32_t imageCount = surfaceCaps.minImageCount + 1;
@@ -184,7 +190,7 @@ bool VulkanSwapChain::CreateFramebuffers(VulkanRenderPass* renderPass) {
 }
 
 void VulkanSwapChain::BeginRender(vk::Semaphore &imageAvalibleSemaphore) {
-    m_imageRenderIndex = m_logicalDevice->GetHandle().acquireNextImageKHR(m_swapchain, UINT64_MAX, imageAvalibleSemaphore).value;
+    m_imageRenderIndex = AcquireNextImage(imageAvalibleSemaphore);
 }
 
 void VulkanSwapChain::Present(vk::Semaphore &renderSemaphore) {
@@ -194,5 +200,9 @@ void VulkanSwapChain::Present(vk::Semaphore &renderSemaphore) {
         &m_imageRenderIndex
     );
     m_logicalDevice->GetGraphicsQueue().presentKHR(presentInfo);
+}
+
+uint32_t VulkanSwapChain::AcquireNextImage(vk::Semaphore imageAvailableSemaphore) {
+    return m_logicalDevice->GetHandle().acquireNextImageKHR(m_swapchain, UINT64_MAX, imageAvailableSemaphore).value;
 }
 

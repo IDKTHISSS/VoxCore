@@ -15,15 +15,22 @@ public:
     VulkanSwapChain(VulkanInstance* instance, PhysicalDevice* physicalDevice, LogicalDevice* logicalDevice);
     ~VulkanSwapChain();
 
-    bool Init(vk::SurfaceKHR surface);
+    bool Init(vk::SurfaceKHR surface, vk::Extent2D extent);
     bool CreateFramebuffers(VulkanRenderPass* renderPass);
-    void BeginRender(vk::Semaphore& imageAvalibleSemaphore);
+    void BeginRender(vk::Semaphore& imageAvailableSemaphore);
     void Present(vk::Semaphore& renderSemaphore);
 
     vk::SurfaceFormatKHR& GetSurfaceFormat() { return m_surfaceFormat; }
     vk::Format& GetDepthFormat() { return m_depthFormat; }
     vk::Extent2D& GetSwapExtent() { return m_swapExtent; }
     vk::Framebuffer& GetFramebuffer(uint32_t index) { return m_framebuffers[index]; }
+    uint32_t GetImageCount() const {
+        return static_cast<uint32_t>(m_imageViews.size());
+    }
+    uint32_t GetCurrentImageIndex() const {
+        return m_imageRenderIndex;
+    }
+    uint32_t AcquireNextImage(vk::Semaphore imageAvailableSemaphore);
 
 private:
     VulkanInstance* m_vulkanInstance;

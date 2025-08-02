@@ -10,12 +10,12 @@
 #include "SDL3/SDL_vulkan.h"
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 VulkanInstance::VulkanInstance() {
-
+    m_appInfo = vk::ApplicationInfo{};
     m_appInfo.pApplicationName = "VoxCore Engine base";					// Custom name of the application
     m_appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);		// Custom version of the application
     m_appInfo.pEngineName = "VoxCore";							// Custom engine name
     m_appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);			// Custom engine version
-    m_appInfo.apiVersion = VK_API_VERSION_1_3;					// The Vulkan Version
+    m_appInfo.apiVersion = VK_API_VERSION_1_4;					// The Vulkan Version
 
     m_instance = nullptr;
 }
@@ -34,14 +34,17 @@ bool VulkanInstance::Init() {
     char const* const* exts = SDL_Vulkan_GetInstanceExtensions(&extCount);
     std::vector<const char*> extensions(exts, exts + extCount);
     vk::InstanceCreateInfo instanceInfo({}, &m_appInfo, 0, nullptr, extCount, extensions.data());
-    const std::vector<const char*> layers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-    instanceInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-    instanceInfo.ppEnabledLayerNames = layers.data();
-    m_instance = vk::createInstance(instanceInfo);
+
+    instanceInfo.enabledLayerCount = static_cast<uint32_t>(m_enabledLayers.size());
+    instanceInfo.ppEnabledLayerNames = m_enabledLayers.data();
+    try {
+        m_instance = vk::createInstance(instanceInfo);
+    } catch (const vk::SystemError& err) {
+        LOG_FATAL("Vulkan", "Failed to create instance: {}", err.what());
+        return false;
+    }
     VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
     LOG_INFO("Vulkan", "Vulkan instance created with {} extensions and {} layers.",
-             extensions.size(), layers.size());
+             extensions.size(), m_enabledLayers.size());
     return true;
 }

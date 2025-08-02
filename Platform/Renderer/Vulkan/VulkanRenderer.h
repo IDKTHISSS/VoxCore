@@ -30,6 +30,7 @@ class VulkanRenderPass;
 class VulkanSwapChain;
 class LogicalDevice;
 class PhysicalDevice;
+class IUISystem;
 
 // Indices (locations) of Queue Families (if they exist at all) TEMP HERE
 
@@ -38,10 +39,22 @@ public:
     VulkanRenderer();
     ~VulkanRenderer() override;
     bool Init(IWindow* window, UWorld* world) override;
+    void BeginFrame() override;
+    void ProcessRender();
+    void EndFrame() override;
+
     Camera* GetCamera() { return m_camera.get(); }
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
-private:
 
+    VulkanInstance* GetInstance() const { return m_instance.get(); }
+    PhysicalDevice* GetPhysicalDevice() const { return m_physicalDevice.get(); }
+    LogicalDevice* GetLogicalDevice() const { return m_logicalDevice.get(); }
+    VulkanSwapChain* GetSwapchain() const { return m_swapchain.get(); }
+    VulkanRenderPass* GetRenderPass() const { return m_renderPass.get(); }
+    VulkanCommandSystem* GetCommandSystem() const { return m_commandSystem.get(); }
+
+private:
+    uint32_t m_currentFrame = 0;
     UWorld* m_world = nullptr;
     std::unique_ptr<VulkanInstance> m_instance;
     std::unique_ptr<PhysicalDevice> m_physicalDevice;
@@ -52,10 +65,14 @@ private:
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
     std::unique_ptr<Camera> m_camera;
 
+
+    std::vector<vk::Semaphore> m_imageAvailableSemaphores;
+    std::vector<vk::Semaphore> m_renderFinishedSemaphores;
+    std::vector<vk::Fence> m_inFlightFences;
+
     vk::DescriptorSetLayout m_cameraDescriptorSetLayout;
 
     vk::SurfaceKHR m_surface = nullptr;
-    uint32_t m_currentFrame = 0;
     std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;
     void RenderFrame() override;

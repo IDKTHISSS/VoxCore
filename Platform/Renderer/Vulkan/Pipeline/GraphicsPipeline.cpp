@@ -42,25 +42,22 @@ bool GraphicsPipeline::Init() {
        );
         shaderStages.push_back(stageInfo);
     }
-    for (int i = 0; i < shaderStagesMap.size(); ++i) {
-        vk::ShaderModule shaderModule = shaderStagesMap[static_cast<ShaderStage>(i)];
-
-    }
     auto layout = std::make_unique<VulkanVertexLayout>();
     auto* binding = static_cast<vk::VertexInputBindingDescription*>(layout->getNativeBindingDescription());
     auto* attrs = static_cast<vk::VertexInputAttributeDescription*>(layout->getNativeAttributeDescriptions());
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo(
         {},
-        1, binding,
-        2, attrs
+        0, nullptr,
+        0, nullptr
     );
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vk::PrimitiveTopology::eTriangleList);
+
     vk::Viewport viewport(0, 0, (float)m_swapChain->GetSwapExtent().width, (float)m_swapChain->GetSwapExtent().height, 0, 1);
     vk::Rect2D scissor({0, 0}, m_swapChain->GetSwapExtent());
     vk::PipelineViewportStateCreateInfo viewportState({}, 1, &viewport, 1, &scissor);
     vk::PipelineRasterizationStateCreateInfo rasterizer({}, false, false,
-                     vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise);
+                     vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise);
     rasterizer.setLineWidth(1.0f);
     vk::PipelineMultisampleStateCreateInfo multisampling({}, vk::SampleCountFlagBits::e1);
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -74,7 +71,7 @@ bool GraphicsPipeline::Init() {
     );
     vk::PipelineLayoutCreateInfo layoutInfo({},
         static_cast<uint32_t>(m_descriptorSetLayouts.size()), m_descriptorSetLayouts.data(),
-        1, &m_pushConstantRange);
+        0, nullptr);
 
     m_pipelineLayout = m_logicalDevice->GetHandle().createPipelineLayout(layoutInfo);
     vk::GraphicsPipelineCreateInfo pipelineInfo({},

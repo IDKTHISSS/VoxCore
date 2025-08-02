@@ -5,7 +5,7 @@
 #pragma once
 #include "IPipeline.h"
 #include "glm/vec3.hpp"
-#include "Platform/Renderer/Vulkan/Core/VulkanShader.h"
+#include "../Common/VulkanShader.h"
 #include "Platform/Renderer/Vulkan/Swapchain/VulkanSwapChain.h"
 #include <memory>
 #include <functional>
@@ -35,7 +35,7 @@ public:
     }
     GraphicsPipeline* SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
     GraphicsPipeline* SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
-
+    vk::Pipeline& GetHandle() { return m_pipeline; }
 
 private:
 

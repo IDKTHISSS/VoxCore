@@ -21,14 +21,11 @@ public:
     }
     bool Init(uint32_t graphicsQueueFamilyIndex);
     void Cleanup();
-    void BeginFrame();
-    void BeginRender(vk::Framebuffer framebuffer, vk::Extent2D extent);
-    void EndRender();
-    void EndFrame();
-    uint32_t GetCurrentFrame() const { return m_currentFrame; }
+    vk::CommandBuffer& GetCommandBuffer(const int frameIndex = -1) {
+        return m_commandBuffers[frameIndex];
+    }
 
 private:
-    uint32_t m_currentFrame = 0;
     VulkanInstance* m_vulkanInstance;
     LogicalDevice* m_logicalDevice;
     VulkanRenderPass* m_renderPass;
@@ -36,8 +33,5 @@ private:
     GraphicsPipeline* m_graphicsPipeline;
     vk::CommandPool m_commandPool{};
     std::vector<vk::CommandBuffer> m_commandBuffers;
-    std::vector<vk::Semaphore> m_imageAvailableSemaphores;
-    std::vector<vk::Semaphore> m_renderFinishedSemaphores;
-    std::vector<vk::Fence> m_inFlightFences;
 };
 

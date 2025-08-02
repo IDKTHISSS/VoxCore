@@ -4,7 +4,11 @@ project(VoxCore)
 set(CMAKE_CXX_STANDARD 23)
 
 enable_testing()  # Включает поддержку CTest
-
+if (WIN32)
+    add_compile_definitions(PLATFORM_WINDOWS)
+elseif(UNIX)
+    add_compile_definitions(PLATFORM_LINUX)
+endif()
 # === GoogleTest ===
 add_subdirectory(libs/googletest)
 
@@ -57,13 +61,23 @@ target_include_directories(VoxCore PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         "$ENV{VULKAN_SDK}/Include"
 )
-target_link_libraries(VoxCore
-        imgui
-        SDL3-static
-        Vulkan::Vulkan
-        "$ENV{VULKAN_SDK}/Lib/shaderc_shared.lib"
-)
 
+if (WIN32)
+    target_link_libraries(VoxCore
+            imgui
+            SDL3-static
+            Vulkan::Vulkan
+            "$ENV{VULKAN_SDK}/Lib/shaderc_shared.lib"
+    )
+elseif(UNIX)
+    find_library(SHADERC_LIB shaderc_shared REQUIRED)
+    target_link_libraries(VoxCore
+            imgui
+            SDL3-static
+            Vulkan::Vulkan
+            ${SHADERC_LIB}
+    )
+endif()
 # === Unit Tests ===
 add_executable(VoxCoreTests
         Tests/Basics/SDL_Window_Tests.cpp

@@ -5,7 +5,7 @@
 // Engine/Core/Application/Application.cpp
 
 #include "Application.h"
-#include "../Platform/Window/SDL3Window.h"
+#include "../Platform/Window/SDL3/SDL3Window.h"
 #include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include <chrono>
 #include <utility>
@@ -17,6 +17,7 @@
 #include "Core/ECS/BaseClasses/UWorld.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
+#include "Platform/Window/Components/WindowInputComponent.h"
 
 using namespace Engine;
 
@@ -59,7 +60,7 @@ void Application::Run() {
     renderer = std::make_unique<VulkanRenderer>();
     m_world = std::make_shared<UWorld>();
     if (!renderer->Init(window.get(), m_world.get())) {
-        LOG_ERROR("Application", "Failed to initialize Vulkan renderer.");
+        LOG_FATAL("Application", "Failed to initialize Vulkan renderer.");
         return;
     }
 
@@ -85,22 +86,20 @@ void Application::Update(float dt) {
     if (!camera) return;
 
     // Используем новый API окна для ввода
-    const auto& keyBuf = window->GetKeyBuffer();
-    const auto& mouse = window->GetMouseState();
 
-    float moveSpeed = (keyBuf[SDL_SCANCODE_LSHIFT] ? 8.0f : 3.0f) * dt;
+    float moveSpeed = (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_SHIFT) ? 8.0f : 3.0f) * dt;
     glm::vec3 move(0.0f);
-    if (keyBuf[SDL_SCANCODE_W]) move.z += moveSpeed;
-    if (keyBuf[SDL_SCANCODE_S]) move.z -= moveSpeed;
-    if (keyBuf[SDL_SCANCODE_A]) move.x -= moveSpeed;
-    if (keyBuf[SDL_SCANCODE_D]) move.x += moveSpeed;
-    if (keyBuf[SDL_SCANCODE_SPACE]) move.y += moveSpeed;
-    if (keyBuf[SDL_SCANCODE_LCTRL]) move.y -= moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_W)) move.z += moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_S)) move.z -= moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_A)) move.x -= moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_D)) move.x += moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_SPACE)) move.y += moveSpeed;
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_CONTROL)) move.y -= moveSpeed;
     if (glm::length(move) > 0.0f) camera->Move(move);
 
     static bool mouseCaptured = false;
     static bool lastRightButton = false;
-    bool rightButton = mouse.buttons[SDL_BUTTON_RIGHT];
+    bool rightButton = window->GetInputComponent()->GetMouseState().buttons[3];
     if (rightButton && !lastRightButton) {
         mouseCaptured = !mouseCaptured;
         window->SetRelativeMouseMode(mouseCaptured);
@@ -109,9 +108,7 @@ void Application::Update(float dt) {
 
     if (mouseCaptured) {
         float sensitivity = 0.12f;
-        camera->Rotate(mouse.dx * sensitivity, -mouse.dy * sensitivity);
-        const_cast<MouseState&>(mouse).dx = 0;
-        const_cast<MouseState&>(mouse).dy = 0;
+        camera->Rotate(window->GetInputComponent()->GetMouseState().deltaX * sensitivity, -window->GetInputComponent()->GetMouseState().deltaY * sensitivity);
     }
 
 }
